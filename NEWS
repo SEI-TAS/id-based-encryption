@@ -1,0 +1,1509 @@
+Wed Jul 10 13:57:14 PDT 2002
+    Yesterday I fixed a bug in request.c (wasn't calling SSL_library_init()).
+    The bug was first reported by
+    Eun-Young Christina Park <ecpark@comm.utoronto.ca>
+
+    Today I received a duplicate bug report from
+    Andrew Park <apark@cdf.toronto.edu> so I guess I had better
+    release the next version!
+
+    [ibe-0.7.2.tgz]
+
+
+Tue Jul  2 11:31:31 PDT 2002
+    Changed strncmp to memcmp in byte_string.c
+    Added crypto_test() to torture. Doesn't fit in that well since it's a pure
+    crypto test and doesn't involve IBE at all.
+    Fields in format.c are called U, V, W again.
+
+    [ibe-0.7.1.tgz]
+
+
+Tue Jul  2 01:00:50 PDT 2002
+    Now automatically generate/prepend IV for any encryption. Makes the code
+    a bit more complex, and will probably crash if init and final are called
+    but update isn't.
+
+    Annoying bug: was failing torture tests occasionally because I was using
+    strncpy instead of memcpy.
+
+    ...
+
+    Also does MAC automatically now. Got rid of crypto_convenient_*() because
+    regular encrypt and decrypt are the same now. crypto_encrypt*() and
+    crypto_decrypt*() can now be used as blackbox IND-CCA ciphers.
+    (OpenSSL should provide functions like these in the first place!)
+
+
+Mon Jul  1 19:53:21 PDT 2002
+    Changed all occurrences of md5 to sha1 in crypto.c
+    Better cipherkey + hashkey derivation from the secret in crypto.c
+    Got rid of EVP_MD_MAX_SIZE, and instead replaced with exact size,
+    obviating the need for several byte_string_reinits().
+
+Sun Jun 30 18:07:48 PDT 2002
+    Fixed corner cases in general_point_mul, added assert()s here and there.
+    Renamed check_point to point_valid_p.
+
+Sat Jun 29 18:36:37 PDT 2002
+    Started adding return codes to various functions.
+    Looks like OpenSSL API will change very soon, started preparing for it.
+    Had to change API slightly, now crypto_ctx's must be explicitly initalized
+    and cleared.
+
+    At the moment, behaviour is as follows
+
+    foo(byte_string_t bs) {
+	byte_string_init(bs, something);
+
+	if (unsuccessful) {
+	    byte_string_clear(bs);
+	    return 0;
+	}
+
+	return 1;
+    }
+
+    i.e. if it's not successful, then byte_string_t's remain unallocated.
+
+    Updated README.
+
+    Still more error checking to do, especially with bad serializations.
+    However, a release is overdue.
+
+    [ibe-0.7.0.tgz]
+
+
+Sat Jun 29 15:38:29 PDT 2002
+    Added BLS and IBE sigs to torture program.
+    Made torture more flexible and easy to use.
+    The library is passing all the tests, and seems to have no memory leaks.
+
+
+Fri Jun 28 17:16:01 PDT 2002
+    Some tidying up: mm.*.c holds counters that keep track of memory usage.
+
+    Added threaded torture test. Sometimes it fails.
+    Changed md_ctx from global to local in crypto.c, torture program seems
+    to never crash now.
+
+    Fixed uninitialized point bug in IBE_sign(). Wrote sig_test.c which
+    tests identity-based signatures.
+
+    Removed int t argument from IBE_construct_master().
+
+    Added master key splitting to torture program. Added params_robust_clear()
+    for testing purposes.  (I can split the key repeatedly, to see if there are
+    memory leaks.) Tortured combine, it seems to hold up well.
+
+
+Fri Jun 28 15:08:32 PDT 2002
+    Added curve_t type. Removed globals from curve.c.
+
+    Removed globals from fp2.c. API is a bit fatter now, but can have
+    several different systems running at once now.
+
+
+Fri Jun 28 11:37:11 PDT 2002
+    Better release it before the next major changes. (I'm going to
+    add more error handling, and make some API changes.)
+
+    [ibe-0.6.0.tgz]
+
+    Added "pain levels" to torture program.
+
+    Added params_t type. ibe_lib.c has no globals now. Causes API changes:
+    have to pass params around all the time.
+
+    Removed global_zeta from curve.c
+
+
+Thu Jun 27 23:09:05 PDT 2002
+    Finished off IBE_clear(), i.e. free everything allocated by
+    IBE_setup() (or IBE_deserialize_params).
+
+    Fixed fp2 leak in map_byte_string_to_point().
+
+    Fixed uninited PhiPpub. I'm surprised the program never crashed
+    because of this before.
+
+    Fixed uncleared Ppub in IBE_setup(). Now all the counts are at 0 at
+    the end of the program.
+
+    Wrote a light torture test program (torture.c).
+    Discovered that the library is still leaking like a sieve (by
+    running top).
+
+    Removed n from parameters. Removed some debug printf's.
+
+    Cleaned up version and id string a little.
+
+    Fixed mpz leaks in curve.c(!): pts_preprocess_line() and
+    tate_preprocess(), point_mul_preprocess() (the last one I had
+    init's instead of clear's). Torture program no longer leaks
+    but it only tests the KEM functions.
+    
+    Changed torture program so that it calls higher level functions
+    IBE_hide_secret and IBE_reveal_secret. Leaks again.
+
+    Fixed leak in crypto_convenient_decrypt: wasn't freeing the array
+    of byte_strings. Torture program no longer leaks again. Something ought
+    to done to make it easier to avoid this bug but I don't know what.
+
+
+Thu Jun 27 17:43:30 PDT 2002
+    Removed malignant free()'s in format.c that were left over from when I
+    switched from malloc's to alloca.
+    Thanks to Yongdae Kim <kyongdae@ics.uci.edu> for tracking this down.
+
+    Removed exits, added a special case handler. Should only matter on very
+    small curves.
+
+    Wrote some code to keep track of byte_strings.
+
+    Fixed a memory leak in hash_G(). Moved hash_?1() to old_code.c (only
+    needed for Fujisaki-Okamoto scheme).
+
+    Changed crypto_hash(): it now does the allocation for you.
+
+    Cleaned up ibe program: now frees byte_strings before exiting.
+
+    Now also keep track of fp2's.
+
+
+Thu Jun 27 15:23:36 PDT 2002
+    Renamed KEM functions so that they have "KEM" in their names.
+    Added IBE_hide_key and IBE_reveal_key so it's more usable.
+    Added "convenient" versions of encrypt/decrypt.
+
+    New test script, encrypts random data. ("testscript2")
+
+
+Sun Jun 16 22:28:28 PDT 2002
+    Some minor fixes due to kromJx <kromJx@myrealbox.com>.
+
+    [ibe-0.5.2.tgz]
+
+
+Thu Jun 13 14:51:41 PDT 2002
+    I had forgotten to MAC the IV.
+
+    Added encrypt/decrypt for messages that fit in memory.
+    (We use the secret from the KEM to encrypt a key, which is then used
+    to encrypt the actual message.)
+
+    Cleaned up crypt_save/load. Added MAC to it, changed format.
+
+    save/load_byte_string not in PEM format any more.
+
+    Slight API change: FMT_decrypt_stream also requires ID now.
+
+    Added support for multiple recipients. Currently shows who else is
+    getting the message. May add a blind version, but then you have to
+    brute force it out. Maybe I should at least hash the ID's? Will ask.
+
+    [ibe-0.5.1.tgz]
+
+
+Tue Jun 11 12:09:42 PDT 2002
+    Minor API change: hide_secret_array takes a char * array and a count, rather
+    than a NULL-terminated array.
+
+
+Sun Jun  9 12:24:38 PDT 2002
+    Added crypto_va_hash. Is there a weakness here?
+    (Can get collisions since H("abc"||"def") = H("ab"||"cdef").)
+
+    Renamed construct_key to combine (it combines certificates too).
+
+    Added IBE signatures that use BLS (certificates with aggregation trick).
+    Untested.
+
+    Changed ibe_test.c so that it works.
+
+    Changed byte_string array serialization again. Now easier to validate.
+    (Invalid byte_string array serializations now map to empty arrays.)
+
+    Renamed HISTORY (this file) to NEWS, and reversed the order of
+    entries, as suggested by kromJx <kromJx@myrealbox.com>.
+
+    [ibe-0.5.0.tgz]
+
+
+Sat Jun  8 20:50:10 PDT 2002
+    Wrote BLS test program, fixed problems with BLS signature routines.
+    Now appears to work, so the headers are now uncommented.
+
+    Using the BF system as a KEM is now the default for the "ibe" utility.
+    Also added support functions in crypto to make it easier to use, e.g.
+    automatically does Encrypt-then-MAC.
+
+    Finally corrected format.c hard limits. Can now encrypt/decrypt streams.
+
+    Now ibe_test.c doesn't work because I took out the old code.
+
+
+Fri Jun  7 16:13:25 PDT 2002
+    Fixed one bug reported by kromJx <kromJx@myrealbox.com>
+    Other one will take longer.
+
+
+Thu Jun  6 17:06:12 PDT 2002
+    Fixed hash function H (now uses both coords(!)).
+
+    Changed serialization scheme. Should be easier to debug and change now.
+
+    [ibe-0.4.0.tgz]
+
+
+Sun Jun  2 22:18:03 PDT 2002
+    `master' no longer a global.
+
+    Added BLS stuff; still need to handle serialization errors everywhere.
+    Completely untested.
+
+    Added map_byte_string_to_point.
+
+    Master shares are no longer loaded into globals. Each key gen is slightly
+    slower, but not by much. (Converts byte_string to mpz every time now,
+    could add a context struct to avoid this if this turns out to be a
+    problem.)
+
+    Moved IBE_make_id() to format.c
+
+    Moved MM stuff into mm.[ch], some byte_string stuff to byte_string.[ch]
+
+    Removed some miller_cache globals. Added preprocessed_key_t stuff.
+
+    No longer call OpenSSL_add_all_algorithms() which breaks pkghtml. Will
+    fix later.
+
+    Limitations caused by globals:
+	- fp2.c has a fixed modulus
+	- curve.c has a fixed curve
+	- ibe_lib.c has a fixed system
+    Can't fix latter ones without fixing former ones. And seems tricky
+    to fix fp2.c and keep it very efficient/easy to use.
+
+    Removed *_mod() from fp2.c, can't remember why they're there.
+
+    Added KEM functions, no longer need to use Fujisaki-Okamoto construction.
+    (They're called IBE_hide_secret(), IBE_reveal_secret().)
+
+
+Sun Jun  2 01:59:08 PDT 2002
+    More significant cleanup: added byte_string.[ch] and crypto.[ch].
+    crypto.c contains wrappers to OpenSSL, and can be changed to support
+    different crypto libraries.
+
+    Will have to bump up major version number.
+
+    Also found minor bug: hashing F_p^2 was done badly: x-coord accidently
+    repeated instead of y-coord. Doesn't matter much for our case because
+    y-coord almost uniquely determined by x anyway.
+
+    Now core IBE library does not depend on OpenSSL. Will move more stuff out,
+    e.g. IBE_get_year() and IBE_make_id().
+
+
+Sat Jun  1 17:14:39 PDT 2002
+    Applied Donal Hunt's patch: case-insensitive comparison for
+    "Content-Length" so Netscape works with pkghtml. (Actually, did this
+    a few days earlier but didn't record this).
+
+
+Wed May 15 16:19:02 PDT 2002
+    request.c bugfix (was sending incorrect Content-Length) (bug reported
+    by Donal Hunt)
+
+    [ibe-0.3.2.tgz]
+
+
+Wed May  8 17:45:33 PDT 2002
+    Started looking into cleanup routines. Some minor renaming, e.g.
+    fp2_init_modulus -> fp2_context_init.
+
+
+Thu Apr  4 15:13:03 PST 2002
+
+    More cleaning up: got rid of #ifdefs (except header file ones).
+
+    [ibe-0.3.1.tgz]
+
+
+Thu Apr  4 03:10:48 PST 2002
+
+    Cleaned up Makefile slightly, can use it to cross compile for Windows.
+    Some overdue documentation fixes.
+
+
+Tue Mar 19 18:47:43 PST 2002
+
+    Added fp2_set_str().
+
+    Changed version numbering system to <major version>.<minor version>
+
+    [ibe-0.3.0.tgz]
+
+
+Thu Mar  7 15:48:14 PST 2002
+
+    Bugfix: changed stdin's to infp in format.c. Thanks to
+    James Mickens <jmickens@eecs.umich.edu>.
+
+
+Mon Feb 11 12:27:38 PST 2002
+
+    Fixed bug in curve.c: general_point_mul() (found by Donal Hunt)
+
+    Removed solinas_miller(), made general_miller public.
+
+    [ibe-0.21.tgz]
+
+
+Thu Feb  7 13:33:58 PST 2002
+
+    Looks like there are off-by-one "errors": during prepro. I calculate too
+    many things. Will fix later.
+
+    Replaced some special case checks with asserts.
+
+
+Wed Feb  6 17:34:35 PST 2002
+
+    More cleaning up, added wrapper functions to prepro. in ibe_lib.c.
+    Can officially measure it. (dec time = no prepro because haven't got
+    decrypt_preprocess or decrypt_postprocess.)
+
+    benchmarks:
+    0.000000 initialization
+    0.003892 computing rP
+    0.002539 first part of map_to_point
+    0.021641 make_order_q
+    0.013345 miller
+    0.005965 Tate power
+    0.002803 gid^r
+    elapsed time: 0.050865
+    dec time: 0.047570
+
+    [ibe-0.20.tgz]
+
+
+Tue Feb  5 14:13:55 PST 2002
+
+    Cleaned up code: renamed weil.c to curve.c, removed some functions. Old
+    stuff still in messyweil.c
+
+
+Fri Feb  1 13:38:12 PST 2002
+    Added wrapper functions for the preprocessing. With preprocessing,
+    Miller takes about 13ms, faster than Tate power.
+
+    Library is really messy now. Cleanup urgently needed.
+
+    Implemented Paulo's Tate power speedup.
+
+    benchmarks:
+    0.000000 initialization
+    0.011810 computing rP
+    0.002505 first part of map_to_point
+    0.021769 make_order_q
+    0.034027 miller
+    0.005943 Tate power
+    0.002843 gid^r
+    elapsed time: 0.079081
+    dec time: 0.052273
+
+    (nonprepro. times shown)
+
+    Fixed a memory leak in point_mul.
+
+    Added point_mul with preprocessing. Halved its running time.
+    Can speed up further but will wait until something else has been improved.
+
+    benchmarks:
+    0.000000 initialization
+    0.003964 computing rP
+    0.002503 first part of map_to_point
+    0.022384 make_order_q
+    0.033489 miller
+    0.005958 Tate power
+    0.002757 gid^r
+    elapsed time: 0.071254
+    dec time: 0.043824
+
+    With prepro, main time-waster is make_order_q, followed by miller():
+
+
+Fri Feb  1 02:22:56 PST 2002
+    Paulo was right: it appears R1, R2 are unnecessary. Switched to f_P(Q),
+    where (f_P) = n(P) - n(O).
+
+    Also, at the end of miller(), you know Z = O, so the last
+    computations are specialized (g_1 will be a vertical line, g_2 = 1),
+    and cP is unnecessary.
+
+    Added preprocessing to miller.
+
+
+Thu Jan 31 14:43:33 PST 2002
+
+    imratio is more accurate now => can tweak fp2_mul/sqr intelligently
+
+    F_p^2 operations
+    5000 2R = 0.903701
+    5000 M = 0.105984
+    5000 S = 0.079674
+    5000 I = 0.501329
+    I/M = 4.730233
+    F_p operations
+    5000 2R = 0.445734
+    5000 M = 0.015692
+    5000 I = 0.360830
+    I/M = 22.994520
+
+    benchmarks:
+    0.000000 initialization
+    0.013884 computing rP
+    0.002529 first part of map_to_point
+    0.022575 make_order_q
+    0.033527 miller
+    0.014245 Tate power
+    0.002888 gid^r
+    elapsed time: 0.089950
+    dec time: 0.061137
+
+
+Tue Jan 29 09:36:11 PST 2002
+
+    Added #ifdef BENCHMARK's.
+
+    Decided to inline fp2_sqr in fp2_pow after all.
+
+
+Sun Jan 27 14:08:58 PST 2002
+
+    Added -fomit-frame-point, -ffast-math, -funroll-loops to CFLAGS in Makefile.
+    Makes a minor difference.
+
+    Replaced some code with mpz_scan1.
+
+    Can inline fp2_sqr in fp2_pow() to get a few ms, but code becomes less
+    clear.
+
+    Rewrote fp2.c so intpower2 is unnecessary.
+
+
+Sun Jan 27 00:38:35 PST 2002
+
+    Using gcc-3.0 (prerelease I guess) now.
+
+    Benchmark.c now uses gettimeofday(), as other methods have poor
+    resolution. Running times are now wall-clock times.
+
+    Rewrote so that there are projective coords in miller(). Should have
+    seen this a long time ago.
+    Shaves another 10ms off.
+
+    Calling mpz functions instead of fp2's: 5ms off:
+
+    benchmarks:
+    0.000000 initialization
+    0.010500 computing rP
+    0.003288 first part of map_to_point
+    0.022337 make_order_q
+    0.037955 miller
+    0.027258 Tate power
+    0.004964 gid^r
+    elapsed time: 0.106770
+
+    dec time: 0.076185
+
+    Stupid fix: I wasn't using fp2_sqr in fp2_pow.
+
+    Just for the record: sometimes encryption takes less than 100ms. I've
+    finally broken the 0.1s barrier!
+
+    benchmarks:
+    0.000000 initialization
+    0.010612 computing rP
+    0.002494 first part of map_to_point
+    0.022326 make_order_q
+    0.038068 miller
+    0.021602 Tate power
+    0.004031 gid^r
+    elapsed time: 0.099605
+
+    Also changing slidingwindowsize to 5 seems to improve tatepower().
+
+    Removed an int s[m+1] (for VC++ compatibility).
+
+
+Thu Jan 24 16:06:35 PST 2002
+
+    Fixed IBE_get_shared_secret().
+
+    [ibe-0.19.tgz]
+
+
+Tue Jan 22 19:11:11 PST 2002
+
+    get_*() functions aren't correct w.r.t evaluating at O. Lines have
+    poles at infinity, so what I was doing didn't make sense.
+
+
+Sat Jan 19 20:46:55 PST 2002
+    Using GMP 4 gives another 10ms:
+
+    0.000000 initialization
+    0.010000 computing rP
+    0.000000 first part of map_to_point
+    0.020000 make_order_q
+    0.050000 miller
+    0.030000 Tate power
+    0.010000 gid^r
+    elapsed time: 0.130000
+
+    Removed unnecesary terms in miller():
+
+    elapsed time: 0.120000
+
+
+Fri Jan 18 15:51:58 PST 2002
+
+    [ibe-0.18.tgz]
+
+    Subgroup size now a Solinas prime. Rewrote miller() to take advantage of
+    this (old one is still there; the library automatically selects the right
+    one to use). Didn't speed it up by that much (about 30ms).
+
+    Example run (512-bit):
+
+    0.000000 initialization
+    0.010000 computing rP
+    0.010000 first part of map_to_point
+    0.020000 make_order_q
+    0.060000 miller
+    0.030000 Tate power
+    0.010000 gid^r
+    elapsed time: 0.140000
+
+
+Wed Jan 16 16:31:04 PST 2002
+    Finally found the bug: zeta is supposed to be a cube root of unity, and
+    I was using (-1/2 + -1/2 * sqrt(-3)), but since I was extending Z_p by
+    sqrt(-3) I took a shortcut and used (-1/2, -1/2). Now I have to explicitly
+    solve it to find zeta. (i.e. since I'm using sqrt(-1) now I have to
+    find sqrt(3) = 3^((p+1)/4)
+
+    Fixed this bug, also created a fp2_set_cbrt_unity function to make the
+    bug easier to find in the future. It belongs there in any case.
+
+    Removed nqr from fp2.c. Should be slightly faster.
+
+
+Wed Nov 21 19:57:58 PST 2001
+    Something's wrong: it doesn't like nqr != 3 for some reason.
+
+
+Tue Nov 20 21:00:59 PST 2001
+    After looking at competitor code, I decided to remove some generality
+    from my code to make it faster: make sure p = 11 mod 12 so I can use
+    -1 as non quad. residue. (Cuts 3 multiplications to 1 in some cases
+    because I can use difference of two squares trick.)
+
+
+Tue Nov 20 17:56:24 PST 2001
+    Added authenticated_encrypt, authenticated_decrypt.
+    Almost the same as the normal routines but it requires sender ID
+    and sender private key xQ, and we use
+    V = H(r,s) XOR sigma, where s = e(xQ, Q') (Q' is receiver's public key).
+
+    Minor bugfix: md_value wasn't being allocated/freed correctly (i.e.
+    outside the loop).
+
+
+Wed Nov  7 14:48:23 PST 2001
+    Minor change in pkghtml.c: use popen instead of tmpfile + dup hack.
+    Will change infect later.
+
+
+Mon Oct 22 20:40:48 PDT 2001
+    Website broken, hacked infect and pkghtml so they work on Dan's browser
+    (IE 6).
+
+    ...
+
+    Is it faster to exponentiate by r before feeding into miller? Must look
+    into this.
+
+
+Thu Oct 18 17:58:53 PDT 2001
+    Put in some fixes due to Guido Appenzeller.
+
+
+Fri Oct  5 13:15:14 PDT 2001
+    Can't get it to work, despite ripping code from mttest.c
+    At least I now understand why Bob couldn't get PEM_write to work;
+    according to the FAQ, you have to link with threaded VC++ library.
+
+    Given up on trying to make threaded server, gone back to traditional
+    fork model.
+
+    BTW, I've fixed a few of the problems mentioned above; cbrtpwr no longer
+    needed in ibe_lib.c, use SSL's random functions so all random functions
+    are cryptographically strong.
+
+    [ibe-0.17.tgz]
+
+
+Thu Oct  4 22:30:32 PDT 2001
+    Finally fixed salts.
+
+    ...
+
+    pkghtml improved greatly (good thing I read part of UNP1). Uses threads, 
+    parsing is less of a hack. TODO: take out common code from
+    pkghtml and infect. Unfortunately, it crashes randomly because I haven't
+    provided OpenSSL with the locking callback.
+
+
+Thu Oct  4 18:30:03 PDT 2001
+    Minor changes, code ought to be cleaner now. infect works.
+
+
+Thu Oct  4 14:30:49 PDT 2001
+    I agree with Rishi and Matt, S/MIME is too cumbersome. I'm going to
+    switch to PGP style.
+
+
+Wed Oct  3 13:44:06 PDT 2001
+    share format changed slightly, I prepended a byte that holds the
+    server number.
+
+    ...
+
+    extract_share and construct work. Main thing left is pkghtml.cc.
+
+
+Tue Oct  2 20:51:48 PDT 2001
+    Finally got command-line interface to encrypt/decrypt working.
+    Rename apply_Phi?
+
+
+Mon Oct  1 19:07:41 PDT 2001
+    Finished with most of ibe_lib.c. ibe_test.c runs correctly now.
+    (There was a very minor bugfix too: gen would make p too big by a few
+    bits since I forgot to take the factor of 6 into account.)
+
+    Calls to IBE_*() will automatically initialize any byte_string's,
+    whilst other ones won't unless otherwise specified.
+
+    P is not picked with a cryptographically strong random function.
+
+    A few more globals need to be localized in ibe_lib.c (OpenSSL stuff,
+    md_ctx for example.) Need to figure out how to lock miller_randomized_flag.
+
+    Use Ppub and robustP's as "random" points in miller()?
+
+    Changed params format (again!). The other guys wanted some sort of
+    serialization thing (so that params could be easily moved around in
+    memory).
+
+    TODO: move byte_string_t defn. so format.h doesn't need to include
+    ibe.h
+
+
+Mon Oct  1 02:00:40 PDT 2001
+    Started rewriting ibe_lib finally. Some code overlaps with weil.cc,
+    not sure how to resolve. e.g. cbrtpwr
+
+
+Sat Sep 29 19:42:20 PDT 2001
+    More code converted, group_plus (now called point_add), miller, the
+    pairings. Only group_times left to go.
+
+    ...
+
+    group_times converted, now for ibe_lib.cc.
+    I'm worried running times will be impaired because
+	1) allocation of temp. variables (can fix by OpenSSL's trick)
+	2) no dedicated multiplication modulo p
+
+    ...
+
+    weil_test.cc works.
+
+    TODO's: seed GMP's randstate, handle special cases in proj_double
+    and proj_mix_in, and also zzp_point*
+
+
+Wed Sep 26 22:58:13 PDT 2001
+    To convert, I write each function in parallel to the NTL code, and
+    call and compare to check. I'm adding comments to functions as I go,
+    so weil.c ought to be easier to understand when I'm done.
+
+
+Tue Sep 25 13:23:17 PDT 2001
+    I have begun the long painful conversion to C.
+
+
+Fri Sep 21 23:27:37 PDT 2001
+    Did some research into Unix mail clients and MIME. Looks difficult to
+    build plugins for other programs. The best I can do is ask the
+    user to filter mail before/after sending through the ibe program
+    for now.
+
+
+Fri Sep 21 15:08:37 PDT 2001
+    Finally got ibe request working in Windows (did it by reading at the
+    end of all the writes).
+
+    Fixed infect.cc (was using "mail=" instead of "id=") and updated the
+    webpage.
+
+
+Thu Sep 20 18:51:13 PDT 2001
+    Projective coordinates may help after all; it is true that I = 2.7M
+    in F_p^2, but I = 7.5M in F_p, and group_times is only ever called
+    with points in E/F_p.
+
+    Small speedup after implementing signed sliding windows in group_times().
+
+    More speed from switching to weighted projective coordinates.
+
+    1024-bit times:
+
+    0.01 initialization
+    0.04 computing rP
+    0.02 first part of map_to_point
+    0.17 make_order_q
+    0.18 miller()
+    0.19 Tate power
+    0.02 computing gid^r
+    elapsed time: 0.64
+
+    512-bit times:
+
+    0.01 initialization
+    0.01 computing rP
+    0.01 first part of map_to_point
+    0.03 make_order_q
+    0.08 miller()
+    0.03 Tate power
+    0 computing gid^r
+    elapsed time: 0.17
+
+    (This was a report produced by a function I just wrote, which uses the
+    routines in benchmark.cc which I also just wrote.)
+
+    [ibe-0.16.tgz]
+
+    Started writing ibe_help.txt
+
+
+Thu Sep 20 15:27:42 PDT 2001
+    512-bit times: (new goal is to get this running under 0.1 seconds)
+
+    0.02 finding rP
+    0.01 first part of map_to_point (hash + determine x coord)
+    0.05 making it order q
+    0.08 miller
+    0.03 exponentiation of miller's output
+    0.01 exponentiation of gid by r
+
+
+Thu Sep 20 02:59:21 PDT 2001
+    Put in rP optimization but it doesn't seem much faster. In fact,
+    loading the cache file slowed it down but that's because I'm using
+    the inefficient config.cc instead of special purpose cache loading
+    routines. I suppose I need to use windows with the cache to get
+    best results.
+
+
+Thu Sep 20 01:52:12 PDT 2001
+    Now I'm confused, after reading Blake, Seroussi & Smart
+    ("Elliptic Curves in Cryptography", London Mathematical Society
+    Lecture Note Series, Cambridge University Press),
+    I wrote imratio.cc to find the relative costs of
+    inversion and multiplication in F_p^2, and the ratio is under 3!
+    This means projective coordinates shouldn't help at all!
+
+    Maybe the speed gain is due to the lack of if's and assumptions made
+    by fast_group_times()? (There is definitely an improvement of about
+    0.05 seconds.)
+
+    Will put in rP optimization. (i.e. take advantage of P being fixed
+    throughout whole system.)
+
+
+Wed Sep 19 19:54:02 PDT 2001
+    Changed format of params file to look like config files for the other
+    programs. That way I can use config.cc routines to parse it rather
+    than some ad hoc routine. Also made it a struct instead of a class.
+    I don't like OO programming in languages with no GC so I'll stick to C
+    data types.
+
+    Added R1, R2 to params (precomputed random points on the curve) to
+    cut 0.05 seconds from the running time.
+
+    I should mention that the other day I added an "ibe" account to rooster,
+    and gave it the full name "Stanford IBE Private Key Generator" so it
+    looks better when you receive your key. Plus I don't have to be logged in
+    as ben.
+
+
+Tue Sep 18 18:58:56 PDT 2001
+    Thanks to Dan, now realized that the optimization I used in Weil pairing
+    still applies to Tate pairing, so I removed a lot of unnecessary code.
+    Though it still didn't improve the speed much. After more testing, it
+    seems miller() takes less than .2 seconds, and now the bottleneck
+    appears to be group_times in make_order_q where it must multiply by
+    a 1024-160 bit number.
+
+    A more detailed breakdown of where the time is spent (based on
+    just one run with 1024-bit p, 160-bit q):
+
+    0.01 initialization
+    0.07 multiplying rP
+    0.02 first part of map_to_point (call to G hash function + calculation
+	of y coordinate)
+    0.4  making the point order q (by multiplying by (p+1)/q)
+    0.05 finding random R1, R2 for miller()
+    0.2  miller()
+    0.2  exponentiation due to using Tate pairing (must raise to
+	(p^2 - 1)/q power i.e. 2048 - 160 bit number)
+	This explains why using the Tate pairing doesn't seem to be much
+	faster than using the Weil pairing
+    0.02 raising g_id to the power of r
+
+    After looking through my short signature code, I realize that I can
+    shave 0.05 seconds off by using precalculated R1, R2. But first I'll
+    try and improve group_times().
+
+    Reactivating fast_group_times() reduces these a bit:
+    0.06 multiplying rP
+    0.3 making the point order q
+
+
+Mon Aug 27 19:02:32 PDT 2001
+    Added daemon_init() to daemonize pkghtml.cc. Decided not to inetd it
+    because in principle it would be under heavy load.
+    Intend to debug POST query handling to see why Mozilla doesn't like it.
+
+
+Sat Jul 21 18:05:29 CDT 2001
+    Forgot to log some entries: crosscompiled IBE a few days ago
+    (see makefile.cross), though request doesn't work unfortunately.
+
+    Added FMT_decrypt(). Being retabbing some files.
+
+    [ibe-0.15.tgz]
+
+
+Tue Jul 17 21:47:34 CDT 2001
+    Fixed bug pointed out by Rishi in IBE_combine;
+    it was delete[]ing index (relic of old code).
+
+    Managed to cross-compile OpenSSL! Unfortunately I'm having
+    trouble cross-compiling IBE; there seems to be a problem with
+    ostrstream.
+
+
+Fri Jul 13 02:16:54 CDT 2001
+    Began writing a tutorial for the library. Also added comments here and
+    there for Rishi et al.
+
+
+Thu May 24 16:09:30 PDT 2001
+    randomize_NTL() now closes the open fp.
+
+
+Wed May 23 21:10:46 PDT 2001
+    Fixed group_times so that you can do group_times(P, a, P).
+
+
+Wed May 16 16:33:12 PDT 2001
+    Minor changes to weil.cc. (Changed V *= V to sqr(V, V), got rid of unity.)
+    This is because I found them while working on the short signatures
+    project.
+
+
+Mon Apr 30 17:59:45 PDT 2001
+    Maybe 3 files are required? one for ibe_lib, one for file i/o and one
+    for easy interface to libraries.
+
+
+Fri Apr 27 12:43:35 PDT 2001
+    Forgot to put in entry yesterday. Wrote FMT_construct_master, but haven't
+    tested it.
+
+    [ibe-0.14.tgz]
+
+
+Wed Apr 25 16:56:03 PDT 2001
+    Moved IBE_encrypt_to_fp, IBE_decrypt_from_fp to format.cc.
+    Moved load_private and save_private to format.cc.
+
+    Decided to move load_params, save_params as well:
+    using file pointers is more portable, and splitting the file i/o
+    part makes it more general (can fool around with many sets of parameters
+    in memory rather than loading and saving all the time).
+
+    Added call to randomize_NTL in IBE_init. Much safer now.
+
+    Some design notes:
+    weil.cc: low level elliptic curve stuff
+	modify if you have faster math routines
+	interface for cryptosystem developers
+
+    ibe_lib.cc: basic cryptosystem, passes things around as ASCIIZ or
+	    unsigned char * and length
+	modify if changing cryptosystem, e.g. different hash function
+	and also if adding more than basic encryption (at the moment can't
+	encrypt big files)
+	interface for library developers
+
+    format.cc: handles file i/o (file formats)
+	modify to change file formats
+	interface for application developers
+
+    Justification: file i/o and file formats don't have much to do with
+	    the crypto side. ibe_lib.cc getting too big. OpenSSL separates
+	    encryption and file I/O as well.
+    
+    Moved file I/O to format.cc
+    Should make_id go in format?
+
+    If format.cc is an API, is that where IBE_version, IBE_n and stuff
+    should go? Or should format.cc just coexist with ibe_lib.cc?
+
+    Keeping index separate to actual share means an extra argument to the
+    functions. Could change by modifying load_key_share to concatenate
+    index to share.
+
+    bugfix: pkghtml.cc not checking validity of params file.
+
+    Now construct_master doesn't work. FMT_construct_master must be rewritten.
+
+    Need to rename some files.
+
+
+Tue Apr 24 15:02:22 PDT 2001
+    Added format.cc, coded new version of encrypt.cc.
+    Rewrote IBE_encrypt, IBE_decrypt to use yesterday's functions.
+
+
+Mon Apr 23 14:11:29 PDT 2001
+    Added IBE_hidekey(), IBE_hidesinglekey(), IBE_revealkey(), IBE_verify().
+    Compiled, but untested.
+
+
+Wed Apr 18 18:27:29 PDT 2001
+    Discovered that Bob's plugin doesn't work with infect. Added a bunch of
+    MIME headers and changed format to conform with Bob's.
+    Renamed decrypt to odecrypt, and added a new decrypt that takes Bob's
+    format. Will have to do the same for encrypt.
+
+    Will change nature of encrypt/decrypt in ibe_lib. Why not
+    have it just deal with keys and not do hashing/encryption of message?
+    Then I have a lot less to worry about e.g. allocating buffers for very
+    long messages. In detail: when user calls encrypt(), they provide
+    sigma, E_sigma(M) and Hash(M). My routine simply works out
+    r = H_1(sigma, M) = H(sigma||Hash(M)), and returns rP, sigma xor H(gidr)
+    Then the caller of decrypt() gives U, V. I return sigma, they find
+    M, and they call a verify() with U, Hash(M), sigma to check integrity.
+    Note I never touch W!
+
+
+Thu Apr 12 16:18:27 PDT 2001
+    Used mail -a flag to solve MIME header problem.
+
+
+Sun Apr  8 13:58:47 PDT 2001
+    Disabled banning temporarily, updated pkgform.html.
+
+    [ibe-0.13.tgz]
+
+
+Thu Apr  5 10:26:43 PDT 2001
+    Finally did private key password. Still has fixed IV though.
+    Rudimentary banned list added.
+    Added GPL to beginning of each source file. Got rid of nettest.cc,
+    ssl*.cc and other debugging programs.
+
+    Don't know what about to do with no fork() in Windows problem. Maybe
+    select can help?
+
+    Wrote infect.cc, that sends someone their first encrypted message.
+    Probably should rename...
+
+    Renamed params to params.txt to make things easier for Bob.
+
+
+Wed Apr  4 18:10:25 PDT 2001
+
+    Was able to cross-compile NTL with GMP! Now I'll see if Bob can use the
+    libraries I made. Details below.
+
+    First copy GetTime4.c to GetTime.c, and then modify make.tail
+    and run my crossntl script. For make.tail, I commented out setup2 and setup4
+    and added "HOSTCOMPILE" and "HOSTLINK" so setup1 and setup3 produce
+    executables that can be run on the host. crossntl is something like
+
+    ./configure CC=i586-mingw32msvc-gcc \
+    CXX=i586-mingw32msvc-g++ \
+    AR=i586-mingw32msvc-ar \
+    RANLIB=i586-mingw32msvc-ranlib \
+    GMP_INCDIR=-I/tmp \
+    NTL_GMP_LIP=on
+
+
+Mon Apr  2 12:35:32 PDT 2001
+    Renamed UTL_config to config.
+    Added purpose field, renamed "mail" to "id".
+    Added date (just the year) field.
+    Now:
+    "purpose=email&date=2001&id=blynn@cs.stanford.edu&subject=foo&system=bar"
+    Fp2 power now uses sliding windows. Continued optimizations.
+    Tate pairing now just under a second, weil pairing just over.
+    (0.98, 1.06 seconds.)
+
+    Cross-compiled GMP. Was surprisingly easy. Just configure with these
+    options:
+
+    ./configure host=pentium3-pc-linux-gnu target=pentium3-pc-mingw32 \
+    CC=i586-mingw32msvc-gcc \
+    LD=i586-mingw32msvc-ld \
+    RANLIB=i586-mingw32msvc-ranlib \
+    NM=i586-mingw32msvc-nm \
+    AR=i586-mingw32msvc-ar \
+    AS=i586-mingw32msvc-as \
+    STRIP=i586-mingw32msvc-strip \
+    DLLTOOL=i586-mingw32msvc-dlltool \
+    OBJDUMP=i586-mingw32msvc-objdump
+
+    Still having trouble with cross-compiling NTL with GMP. First hurdle:
+    sys/resource.h doesn't exist in Windows.
+
+
+Thu Mar 22 19:37:16 PST 2001
+    Talked with Victor Shoup today. Turns out I was misinterpreting gprof
+    results completely! Still takes 1.2 seconds on new machine, and almost 3s
+    on laptop.
+
+    Optimized low-level Fp2 routines. (Made it like assembly language.)
+    No noticeable speedup(!). Will try more later.
+
+    [ibe-0.12.tgz]
+
+
+Mon Mar 19 13:03:18 PST 2001
+    With NTL compiled using GMP, it only takes 0.25 seconds on the laptop
+    (and 0.05 on my new machine in the office). However, I still intend to
+    add Tate pairing to weil.cc. test.cc modified to test Tate pairing
+    instead.
+
+    Finally have it working now. To port system to ehat, must ensure
+    q does not divide p-1 (only 1/2^160 chance of this) and we're done.
+
+
+Tue Mar  6 20:31:33 PST 2001
+    Found another strange bug that didn't matter; I was calling init() in
+    ibe_lib too early (q wasn't initialized!) but why does it work? q seems
+    to hold the correct value. Wasn't the only bug either.
+    Got rid of global p, q in ibe_lib.cc to avoid confusion.
+
+    The fast version of group_times breaks on ibe_test often because of
+    point at infinity problems. Will use slow version for now.
+
+    Split U, V, W so email for multiple recipients will work.
+    Changed id from unsigned char* to char*.
+    Made params file human-readable on request.
+    Added IBE_make_id()
+
+    [ibe-0.11.tgz]
+
+
+Mon Mar  5 13:41:48 PST 2001
+    Implemented Dan's new version of Miller's algorithm. Now takes 25 seconds.
+    With random points shortcut (only works for p = 2 mod 3) takes 9 seconds.
+
+    Ideas left to try: move to GMP, sliding windows instead of repeated
+    squaring, group_times only in F_p, proj. coords in group_times
+
+    Sliding windows in group_times(): 8 seconds.
+
+    [ibe-0.1.tgz]
+
+    Fixed an off-by-one bug: I had i<windowsizepower in the for loop. Why
+    didn't this stop group_times() working correctly?
+
+    Sliding windows in miller(): 7.5 seconds. I believe it's faster to
+    have a few divisions rather than introduce gdenom.
+
+    Specialized group_times(): 7 seconds
+
+    (Can get better times by closing xmms, X windows, etc.: by doing this
+    I have achieved 6 seconds.)
+
+    Disturbing: can't view page with IE any more. Complains about no
+    shared cipher. (Problem goes away if SSLv2 is used.)
+
+
+Sun Mar  4 19:11:48 PST 2001
+    Fixed "bug" in miller. m = numbits was off by one (because the bits are
+    numbered starting from 0, not 1). For some reason it doesn't matter!
+    Also handles odd numbers properly.
+
+
+Fri Mar  2 19:09:57 PST 2001
+    Finally figured out how to work with small subgroup: must make sure
+    R1 and R2 are order q. But it still takes 41 seconds. Can shave a little
+    more off by random points shortcut. And maybe by speeding up group_times.
+
+
+Wed Feb 28 14:31:56 PST 2001
+    Recap: without any optimization: 228 seconds,
+    removing some divisions: 158 seconds,
+    dedicated class: 118 seconds.
+    Shaved another 4 seconds off by simplifying make_order_q()
+
+    Changed curve:
+    Old: E = y^2 = x^3 + x. Phi: (x,y) --> (-x, iy). -1 = non q.r.
+    p = 3 mod 4, q = (p+1) / 4, prime gen: p = 3 mod 8
+    to find random (x,y): random x, then solve y^2 = x^3 + x. If that
+    doesn't work, negate x and repeat.
+
+    New: E = y^2 = x^3 + 1. Phi: (x,y) --> (zeta * x, y). -3 = non q.r.
+    p = 2 mod 3, q = (p+1) / 6, prime gen: p = 5 mod 12
+    to find random (x,y): random y, solve x^3 = y^2 - 1, via
+    x^(1/3) = x^((2p-1)/3)
+
+    (Lost some generality; replaced weil_init_irred with weil_init_nqr)
+
+    Have to change: init(), apply_Phi, calls to force_F_p()
+
+    Fixed bug in Horner's rule in weil.cc (wasn't negating a6).
+    Didn't matter before because a6 was 0.
+
+    After changing curves: takes 97 seconds
+    Improved IBE_setup.
+    No noticeable change after changing 2 *, 3 * to adds, and precalculating
+    2 * *a2 in weil.cc
+    Perhaps slight speedup after removing most if's from miller; I'm gambling
+    that we're lucky most of the time.
+    About a second saved from combining get_line/get_vertical & eval
+
+
+Tue Feb 27 14:44:39 PST 2001
+    Found bug with dedicated class; was testing for 0 incorrectly causing
+    miller() to be run 10x more. Have to fix y_from_x and operator<< before
+    it's fully functional. And sqrtminus1 (why doesn't compiler warn about it?)
+
+
+Mon Feb 26 19:30:17 PST 2001
+    Tried to optimize by replace ZZ_pE's with a dedicated Fp2 class but
+    it's really slow now!
+
+
+Sun Feb 25 17:33:02 PST 2001
+    Finally finished homeworks/projects. Added MIME header.
+    Changed a few divisions to mults in miller() in weil.cc
+    Removed divisions in get_line, get_vertical.
+    Got rid of PEM_write, PEM_read to avoid Windows problems.
+
+    [ibe-0.09.tgz]
+
+
+Sun Feb 11 20:13:34 PST 2001
+    Found out about delete[] from Bob. Fixed some memory leaks
+    and changed delete's to delete[]. There were a couple of places
+    I didn't change the dynamic array declarations.
+
+    Found problem with request.cc; forgot to shutdown sockfd. But
+    SSL_connect should return some error message instead of quitting.
+
+    [ibe-0.08.tgz]
+
+
+Sat Feb 10 15:07:57 PST 2001
+    Got rid of one y_from_x (in force_F_p).
+    Removed power2 code and replaced with bit testing. (Back then I didn't
+    know about it.)
+
+    Changed library interface to share files. Loading sharefiles is now
+    separate.
+    Shares now pass the index in the robustx array rather than its value.
+    index is unencrypted since the server gives the same index to everyone.
+
+    [ibe-0.07.tgz]
+
+    Added password reading to request and combine. Having trouble doing
+    a GET before a POST in request.cc. SSL_connect exits for no reason.
+
+
+Fri Feb  9 14:00:51 PST 2001
+    To compile under Solaris: socklen_t has to be changed to
+    size_t, must have -lxnet for network stuff. Doesn't have /dev/urandom,
+    which causes OpenSSL problems: have to modify hack.c, pkghtml.cc (need
+    to use RAND_seed or similar to seed the PRNG).
+    mail command acts differently.
+
+
+Thu Feb  8 14:34:56 PST 2001
+    Started putting together user interface to system:
+
+    encrypt - encrypts input file and mails to address
+    request - sends requests for key pieces
+    combine - combines saved pieces into a private key
+    decrypt - decrypts input file given key
+
+    Added IBE_version(), IBE_system(), IBE_threshold()
+
+    [ibe-0.065.tgz]
+
+    Combined the four programs into one multipurpose tool.
+    (Similar to openssl.)
+
+    Made minor changes for porting to VC++.
+    (Got rid of for(int i... and dynamic arrays.)
+
+
+Wed Feb  7 13:37:00 PST 2001
+    How do we encrypt blocks in this system? Is it ok to use ECB-style since
+    we pick random numbers for each block?
+
+
+Tue Feb  6 13:48:16 PST 2001
+    Passwords are now ASCIIZ strings. (and char *)
+    Now have to provide system name to IBE_setup.
+    Changed version to version.h, will be used in version field code later.
+
+    [ibe-0.06.tgz]
+
+
+Mon Feb  5 22:40:38 PST 2001
+    Got PKCS#12 to work.
+
+    Can't defeat email eavesdroppers in its current state. Recommend first
+    encrypted mail to be something unimportant. Receiver then answers ASAP
+    that their key has been compromised.
+
+    Before key expires, should send server new password, encrypted with
+    current key?
+
+
+Fri Feb  2 15:21:20 PST 2001
+    Having trouble getting Dan's pkcs12 code to compile.
+    Added %XX, '+' translation to POST query code.
+
+    ID string should be of the form
+    mail=blynn@cs.stanford.edu&date=02/01&foo=bar
+    put it in alphabetical order? (to avoid searching for all permutations)
+    or how about mail field always first, then alphabetical order?
+    make mail= optional?
+    what if reserved word fields are missing?
+    just recommend that all reserved words are included, if they aren't,
+    system still works but you don't know which version/system etc. you're
+    encrypting under.
+    pkg appends system and version automatically.
+
+
+Thu Feb  1 16:50:21 PST 2001
+    pkghtml accepts POST queries now.
+    Added a few comments to weil.cc, now supports negative scalars in
+    group_times.
+
+    For robustness, I'll publish a list of x_i, f(x_i)P_pub.
+    TODO: number the master secrets?
+    TODO: make a key struct. If I do this, I should have key share struct,
+    master share struct, params struct, robust struct (?)
+
+    Decided to combine robustness info with params.
+    For default setup, t = n = 1, x_0 = 1.
+
+    TODO: add button to mail administrator
+
+    Can't seem to delete arrays of ZZ. As a result I have a few memory leaks.
+    Added robustness check.
+    Finished mailer.cc, mailshare.cc. pkg, pkghtml don't use it yet.
+
+    [ibe-0.05.tgz]
+
+
+Wed Jan 31 14:55:30 PST 2001
+    Dan found cgi++. A bit old, but probably useable, I'll give it a shot.
+    Had to "cd mini-g++; make ../libmini-g++.a" to compile it.
+
+    Changed my mind again, found lots of libraries at:
+    http://cgi.resourceindex.com/Programs_and_Scripts/C_and_C++/Libraries_and_Classes/
+
+    cgicc looks good because it's "official" FSF.
+
+    Actually none of them are what I'm looking for because I need code that
+    handles the POST query itself, not after it's been partly translated.
+
+    TODO: pipe thing is still a hack
+
+    TODO: use pkcs#12. This takes care of iv, encryption, MAC.
+
+    TODO: pkg POST query processing is a really bad hack.
+
+
+Tue Jan 30 20:15:46 PST 2001
+    Uses select now. There's a pipe that children send a 4-bytes string to
+    the parent, and then the parent waits for a child to exit.
+
+    Found cgic library on the web, looks promising.
+    
+    TODO: add robustness
+
+    PEM needs docs. Should I be freeing name, header and data after I've
+    finished with them? What do the return codes mean?
+
+    [ibe-0.04.tgz]
+
+    TODO: encrypt private key when saved to file!
+
+    Finally added length checks in *_from_string routines.
+
+    Changed mind about cgic. Not quite what I want.
+    Added mailshare program.
+
+
+Mon Jan 29 18:01:53 PST 2001
+    Changed blowfish to 3DES (for share files) on request.
+
+    TODO: add config files, fix iv hole, fix crashes caused by bad data
+    (i.e. add string length argument to *_from_string functions),
+    add http support, clean up shutdown, generate temp filename,
+    get rid of zombies (probably have to use select).
+
+    Added config files for pkg, gen.
+    Using tempnam for temp files even though it says not to. Can't avoid
+    because I need to change file pointer into file descriptor.
+    Changed encryption of third part from XOR to 3DES. This means hash
+    H1 is from {0,1}^n x {0,1}^* now.
+
+    TODO: add SetSeed somewhere.
+
+
+Sat Jan 27 16:30:33 PST 2001
+    Added master splitting, key share file I/O routines, email.
+    Can't get rid of zombie processes?
+
+    I didn't realize I had to have an iv for blowfish - it was throwing off
+    the first two characters.
+
+    Need to make *_from_string more robust so it can handle bad input. This
+    means more function arguments.
+    New problem: y_from_x does not return the same y from x every time, will
+    now choose the one whose (+ve) representative is closest to 0.
+
+    My test case didn't work because I miscounted the letters in my
+    own email address! (blynn@cs.stanford.edu has 21 letters, not 20!)
+    Now seems to be working fine.
+
+    [ibe-0.03.tgz]
+
+
+Fri Jan 26 19:17:27 PST 2001
+    Got help from Dan today, I wasn't able to complete the handshake because
+    I didn't have a certificate or private key. You make one via:
+    openssl req -new -x509 -keyout keyfile -out certfile
+
+    Basic OpenSSL server/client works. Now have to fool around with PEM.
+
+    [ibe-0.02.tgz]
+
+    It's going to be hard to stick to SSL-style libraries for IBE
+    because NTL has a state. It might be easier to stick with a
+    global params object.
+
+    Problems: can't shutdown SSL connection gracefully.
+    BIO_free doesn't seem to close the file even though BIO_CLOSE is set.
+
+    Implemented simple PEM save/load for params.
+    Librarised IBE routines.
+    Convert everything to char * before passing around.
+    Current policy:
+	Global p = current prime,
+	Must call init(p) as soon as p is changed.
+	params = current parameters
+	common format: [2 bytes = length of x in bigendian] [x]
+
+    Fixed a bad bug in the hash functions that I made while cleaning up
+    code.
+
+
+Thu Jan 25 20:33:23 PST 2001
+    Wrote a simple server, just to refresh my memory.
+    Now adding SSL to it.
+
+
+Wed Jan 24 17:47:35 PST 2001
+    Finished full system, more code cleanup.
+    [ibe-0.01.tgz]
+
+
+Sun Jan 21 17:27:45 PST 2001
+    Added comments, made some parts of code neater
+    e.g. found out about NumBytes function.
+    Added master secret splitter.
+    Fixed bug in hash function H.
+    Improved makefile.
+
+
+Fri Jan 19 14:53:48 PST 2001
+    Moved Phi from weil.c to basic.c. Now generates random points by
+    trying random x until it has a corresponding y.
+    All curve-dependent code removed from weil.c. There are 3 initialization
+    functions that need to be called in order. (Init prime, irreducible and
+    then the curve.)
+
+
+Thu Jan 18 17:41:46 PST 2001
+    Talked with Dan again, we are now using a different curve. I'll take
+    this opportunity to make my code more general. (But I'll still only
+    handle curves with a1 = a3 = 0.)
+
+    Realized I made another mistake before; random point only takes
+    one of the square roots for y.
+
+    Another bad bug in old version; zeta wasn't done properly as
+    roots is a local variable.
+
+    setup just about done. Need to clarify some details.
+
+    ...
+
+    Basic system finished, but with n=160 and hash functions that need
+    improvement.
+
+
+Thu Jan 18 14:45:21 PST 2001
+    according to my number theory book (J. Hunter), -3 is always a
+    quadratic nonresidue if p = 5 mod 6 (which it is if it's > 2 and
+    = 2 mod 3), so there's no need to put in quadratic reciprocity stuff
+    this also means (p-1)/2(1 + sqrt(-3)) is always a cube root of unity.
+
+    made header files, made weil.c more library-like.
+    started setup. p = 2 mod 3 and p = 2q - 1 for prime q seems rare.
+    I have only found one so far (5).
+    BTW, p = 5 mod 12 because p = 11 mod 12 ==> q is odd hence not prime
+    So in fact 3 is also always a quadratic nonresidue for our p, but
+    I'll stick with -3 all the same to make it easier to test weil.c
+
+    IDIOT! I just realized why: p = 2 mod 3 ==> (p+1)/2 = 0 mod 3!
+    So it's never prime (after 5)!!!
+
+
+Wed Jan 17 17:03:32 PST 2001
+    finished (now called weildebug.c)
+    random_point can't pick certain points
+    should choose irreducible polynomial to be x^2 - a for some nonresidue a
+
+
+Tue Jan 16 16:12:39 PST 2001
+    started (see bak?.c)

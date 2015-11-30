@@ -1,0 +1,20 @@
+;config file for public params and master key generator
+
+;filename to save public params to
+params = params.txt
+
+;t-out-of-n sharing
+threshold = 1
+shares = 1
+
+;bits in the prime
+pbits = 512
+
+;bits in the subgroup
+qbits = 160
+
+;filenames of secret shares
+sharefiles = share;share2
+
+;name of system
+system = test

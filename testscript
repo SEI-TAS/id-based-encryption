@@ -1,0 +1,12 @@
+#!/bin/bash
+i=1
+while [ $i -lt 10 ]; do
+    ./gen
+    j=1
+    while [ $j -lt 50 ]; do
+	./ibe key_from_master_shares ben share
+	echo "Hello, World!" | ./ibe encrypt ben | ./ibe fixed_password_decrypt ben
+	j=$((j+1))
+    done
+    i=$((i+1))
+done

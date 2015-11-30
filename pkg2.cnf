@@ -1,0 +1,26 @@
+;config file for private key generator
+
+;port
+port = 54321
+
+;filename to load public params from
+params = params.txt
+
+;filename of secret share
+sharefile = share2
+
+;certificate/private key for OpenSSL
+cert = ca.cert
+key = ca.priv
+
+;emailer
+mail = /usr/bin/mail
+
+;html form
+htmlfile = pkgform.html
+
+;banned list
+banned = banned2
+
+;server name
+servername = Bob

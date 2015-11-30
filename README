@@ -1,0 +1,172 @@
+README for Stanford IBE library v0.7.2
+Ben Lynn <blynn@cs.stanford.edu>
+
+INTRODUCTION
+
+The Stanford IBE library is a C implementation of the Boneh-Franklin
+identity-based encryption scheme. (See Boneh and Franklin, "Identity-Based
+Encryption from the Weil Pairing", CRYPTO 2001.)
+
+There are a few modifications and additions. The Boneh-Franklin scheme is
+used as a Key Encapsulation Mechanism, and off-the-shelf ciphers and HMACs
+are used for the actual encryption. (See Lynn, "Authenticated Identity-Based
+Encryption", available on eprint.)
+
+Identity-based signatures have also been implemented. The Boneh-Lynn-Shacham
+scheme is used (see Boneh, Lynn and Shacham, "Short Signatures from the
+Weil Pairing", ASIACRYPT 2001.) Certificates are employed to make the signatures
+identity based. However, using a trick that we call "signature aggregation" (that
+will be described in a forthcoming paper), there is not much overhead compared
+to other ID-based signature schemes.
+
+The library uses the GMP library (http://www.swox.com/gmp/) for low-level
+arithmetic and the OpenSSL library (http://www.openssl.org/) for various
+cryptographic primitives.
+
+It is still under heavy development so the API could change dramatically
+in future versions. (This already happened several times recently.)
+
+DESCRIPTION
+
+The lowest layer is fp2.c, which uses GMP to perform arithmetic in F_p^2.
+It defines the fp2_t data type, which represents elements of F_p^2.
+
+The next layer is curve.c, which performs the elliptic curve arithmetic.
+It defines the point_t data type, which represents points on the curve.
+It only supports specific curves so that certain optimizations can be
+applied. (For example, it assumes p is a Solinas prime that is 11 mod 12
+and that a particular curve is being used.)
+Furthermore, some functions assume that the points are on E/F_p, not
+E/F_p^2.
+
+On top of this lies ibe_lib.c, which does basic IBE operations.
+It defines the params_t data type, which represents IBE system parameters.
+The headers are in ibe.h. Originally these were routines that performed the
+four IBE operations described in the IBE paper and Authenticated IBE paper
+(Setup, Extract, Encrypt, Decrypt and authenticated versions), but now the BF
+IBE system is used as Key Encapsulation Mechanism instead, and off-the-shelf
+encryption and HMAC algorithms (from OpenSSL) are used in place of the
+construction of Fujisaki and Okamoto.
+
+The file ibe.h is the most important one for application programmers. In fact,
+one could easily build IBE applications using only the functions declared in this
+file, provided that one already has access to a library that can do encryption
+and decryption (such as OpenSSL, or the file crypto.c that is described next).
+
+The code in crypto.c essentially consists of wrappers around OpenSSL functions.
+This is so that another crypto library can be substituted in later, if needed.
+Its role is to provide encryption, decryption and random number generation
+routines.
+
+Next, format.c uses ibe_lib.c and crypto.c to show how the library can be
+used in applications. I called it "format" because it contained code for
+saving and loading various file formats, and it is here these formats are
+defined.
+
+The gen and ibe programs are applications that use the above. They are
+command-line tools that allow people to run IBE systems.
+
+The file byte_string.c defines a data type called byte_string_t that holds a
+string of bytes, and also contains various utility functions for it.
+They were needed because ASCIIZ strings were not sufficient.
+
+mm.* and benchmark.* are for debugging and benchmarking. By default,
+the "void" versions will be used, and any functions starting with mm_ or bm_
+can be ignored.
+
+There are also a bunch of test programs, but the most important one is
+torture.c, as the library cannot be trusted if "torture -m2" does not
+run successfully (and without memory leaks).
+Run "torture -h" to see how to use it.
+
+The library is thread-safe except for IBE_init() and IBE_clear().
+
+The data types were modeled on the GMP data types. For example,
+to use byte_string's:
+
+Declare with:
+    byte_string_t foo;
+
+Initialize with:
+    byte_string_init(foo, n);
+    
+    where n = length of byte string
+
+Now you can assign to foo->data[0] to foo->data[n-1], which hold
+unsigned chars, and also foo->length = n.
+
+Free with:
+    byte_string_clear(foo);
+
+INSTALLATION
+
+Linux:
+
+1.Install the GMP and OpenSSL libraries.
+2.Edit the Makefile and change the directories as needed.
+3.Run make.
+
+Make ibe_test for a simple test program (ibe_test).
+
+Cross-compiling for Windows:
+
+I have only done this with the mingw32 compiler included with the Testing
+distribution of Debian GNU/Linux (http://www.debian.org/).
+
+1. Cross-compile GMP and OpenSSL.
+2. Run "make WIN32=1"
+
+USAGE
+
+For users:
+
+See ibe_help.txt.
+
+For programmers:
+
+Look at ibe_test.c for a specific example.
+
+1) Include ibe.h and format.h in the program. (ibe_test.c doesn't need to
+  include format.h because it doesn't load/save files.)
+
+2) Call IBE_init() to initialize the library.
+
+3) Now system parameters are needed. Declare a params_t type, e.g.
+    params_t params;
+  You can either generate new ones via IBE_setup(), or load them from a file,
+  via FMT_load_params(), e.g.  FMT_load_params(params, "params.txt");
+
+4) Then call the various FMT_* or IBE_* functions to do what you want.
+  FMT_* is a wrapper around the IBE_* functions and deals with files,
+  and IBE_* are the lower level functions and deals with memory buffers.
+
+5) Call params_clear(params) to free the system parameters.
+  Call IBE_clear() to free the memory used by the library.
+
+I wrote a command-line program, called "ibe.c", which does the commonly-used
+operations you'd expect. See ibe_help.txt on how to use it.
+
+See gen.c on how to generate system parameters and save them, and also on how
+to split the master secret and then save the pieces. (Each piece is then copied
+to a server, and the PKG is run on that server using that piece.)
+
+See combine.c on how to combine private key shares together to form a private
+key.  (Right now it's quite insecure because each piece is encrypted with the
+same password, so that's why the generate_password() function looks useless.
+This'll be fixed eventually.)
+
+See encrypt.c on how to encrypt a given message with a given ID,
+and decrypt.c on how to decrypt a given message with a given private key.
+
+REFERENCES
+
+1. http://www.openssl.org/
+    OpenSSL library.
+
+2. http://www.swox.com/gmp/
+    GMP library.
+
+3. http://crypto.stanford.edu/ibe/
+    Stanford IBE project page. Contains online version of Boneh and
+Franklin's paper. Also a link to my homepage where more relevant papers may
+be found.

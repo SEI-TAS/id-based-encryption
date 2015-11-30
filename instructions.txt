@@ -1,0 +1,29 @@
+This message has been encrypted using the Stanford IBE (Identity-Based
+Encryption) system. To decrypt it, download the appropriate files from
+
+http://crypto.stanford.edu/ibe/download.html
+
+For now, the only available prorgam is the command-line "ibe" program.
+(The plugins need to be updated for the new system so have been
+temporarily removed.)
+
+	ibe request <your email address>
+
+to have your private key share mailed to you. (You'll be asked to make up
+a password for it, so that eavesdroppers can't read it while it's in transit.)
+At the moment there is only one private key generator so you only need one
+private key share.
+
+Then once you receive it, save the private key share to a file, and type:
+
+	ibe combine <your email address> <share key file>
+
+This will work out your private key from the share, and save it to another
+file. To be on the safe side, it encrypts the file so you will be asked
+for a password for this.
+
+Now you can finally decrypt this message. Type
+
+	ibe decrypt < <filename>
+
+to decrypt a file.

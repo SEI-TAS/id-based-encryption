@@ -1,0 +1,13 @@
+;config file for user ibe tools
+
+;file that holds public params
+params = params.txt
+
+;default port
+default_port = 12345
+
+;pkg servers
+servers = localhost
+
+;file holding private key
+keyfile = keyfile

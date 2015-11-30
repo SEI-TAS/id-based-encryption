@@ -1,0 +1,9 @@
+If you can read this, you have successfully decrypted this message.
+
+If you're using the ibe command-line executable, you can encrypt
+messages for other people by typing something like:
+	ibe encrypt Alice@foo.bar < plain.txt > cipher.txt
+
+This will encrypt the file "plain.txt" for "Alice@foo.bar", and the
+output goes to "cipher.txt".
+
